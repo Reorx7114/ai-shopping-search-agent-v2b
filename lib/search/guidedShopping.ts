@@ -1,0 +1,17 @@
+import type { NarrowOption, ParsedIntent } from "@/lib/search/types";
+
+const INTRO = "根據你剛剛描述的需求，我先幫你整理幾個可能比較接近的方向。";
+
+export function buildNarrowing(parsed: ParsedIntent): { intro: string; options: NarrowOption[] } {
+  const base = parsed.baseQuery;
+  const has = (x: string) => parsed.tags.includes(x);
+  const options: NarrowOption[] = [
+    { id: "A", label: has("boss") ? "偏穩重但不商務方向" : "偏質感送禮方向", description: "先抓成熟有禮但不會太正式的選品", reason: "你提到送禮情境，先避開過度正式與距離感", searchQuery: `${base} 質感 禮物 實用` },
+    { id: "B", label: has("casual") ? "偏輕鬆日常方向" : "偏有質感但日常可用方向", description: "以好搭配、平常能用的品項為主", reason: "日常可用通常更容易被接受，也較不容易踩雷", searchQuery: `${base} 日常 實用 風格` },
+    { id: "C", label: has("safe") ? "偏大眾接受度高方向" : "偏不踩雷安全牌方向", description: "從中性、接受度高的品類開始", reason: "當收禮者偏好不明確時，安全牌成功率更高", searchQuery: `${base} 送禮 安全牌 熱門` },
+    { id: "D", label: "重新整理方向", description: "如果都不像，可以改描述或換條件重整", reason: "避免硬搜錯方向，先把需求說清楚會更快" }
+  ];
+  if (has("lightColor")) options[1] = { ...options[1], label: "偏淺色柔和方向", searchQuery: `${base} 淺色 柔和 送禮` };
+  if (has("premium")) options[0] = { ...options[0], label: "偏精緻送禮方向", searchQuery: `${base} 高級感 材質 禮盒` };
+  return { intro: INTRO, options };
+}
