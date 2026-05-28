@@ -25,6 +25,10 @@ export async function POST(req: Request) {
     parserSource: parsed.parserSource,
     useSerpEnabled,
     hasSerpApiKey,
+    semanticContext: parsed.parsed.semanticContext,
+    serpRawCount: 0,
+    serpMappedCount: 0,
+    serpFirstRawKeys: [],
     errorMessage: parsed.errorMessage
   };
 
@@ -49,6 +53,12 @@ export async function POST(req: Request) {
   } else {
     const out = await searchSerpApi(queries[0]);
     debug.serpApiCalls = 1;
+    debug.serpRawCount = out.serpRawCount;
+    debug.serpMappedCount = out.serpMappedCount;
+    debug.serpFirstRawKeys = out.serpFirstRawKeys;
+    debug.serpDiscardReason = out.serpDiscardReason;
+    debug.firstRawResultPreview = out.firstRawResultPreview;
+
     if (out.candidates.length > 0) {
       candidates = out.candidates;
       debug.searchProvider = "serpapi";
