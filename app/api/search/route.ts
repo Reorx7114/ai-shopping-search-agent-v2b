@@ -5,15 +5,31 @@ import { searchSerpApi } from "@/lib/search/serp";
 import { mockCandidates } from "@/mockData";
 import type { SearchRequest, SearchResponse } from "@/lib/search/types";
 
+function isTrue(value: string | undefined): boolean {
+  return ["true", "1", "yes", "on"].includes((value || "").trim().toLowerCase());
+}
+
 export async function POST(req: Request) {
   const body = (await req.json()) as SearchRequest;
-  const useSerp = body.useSerp ?? process.env.USE_SERP === "true";
+  const envUseSerp = isTrue(process.env.USE_SERP);
+  const useSerpEnabled = body.useSerp ?? envUseSerp;
+  const hasSerpApiKey = Boolean(process.env.SERPAPI_API_KEY);
+
   const parsed = await parseIntent(body.input || "");
   const narrowing = buildNarrowing(parsed.parsed, body.regenCount ?? 0);
-  const debug: SearchResponse["debug"] = { serpApiCalls: 0, searchProvider: "none", selectedOptionId: body.selectedOptionId, generatedSearchQueries: [], parserSource: parsed.parserSource, errorMessage: parsed.errorMessage };
+  const debug: SearchResponse["debug"] = {
+    serpApiCalls: 0,
+    searchProvider: "none",
+    selectedOptionId: body.selectedOptionId,
+    generatedSearchQueries: [],
+    parserSource: parsed.parserSource,
+    useSerpEnabled,
+    hasSerpApiKey,
+    errorMessage: parsed.errorMessage
+  };
 
   if (body.stage === "narrowing" || !body.selectedOptionId || body.selectedOptionId === "D") {
-    debug.errorMessage = body.selectedOptionId === "D" ? "selectedOption=D" : "stage1 narrowing only";
+    debug.errorMessage = body.selectedOptionId === "D" ? "selectedOption=D; user requested re-narrowing" : "stage1 narrowing only";
     return NextResponse.json({ mode: "narrowing", intro: narrowing.intro, options: narrowing.options, candidates: [], comparisonTable: [], debug } satisfies SearchResponse);
   }
 
@@ -22,17 +38,17 @@ export async function POST(req: Request) {
   debug.generatedSearchQueries = queries;
 
   let candidates = [];
-  if (!useSerp) {
+  if (!useSerpEnabled) {
     debug.searchProvider = "mock";
     debug.errorMessage = "USE_SERP=false";
     candidates = mockCandidates;
-  } else if (!process.env.SERPAPI_API_KEY) {
+  } else if (!hasSerpApiKey) {
     debug.searchProvider = "mock";
     debug.errorMessage = "missing SERPAPI_API_KEY";
     candidates = mockCandidates;
   } else {
-    debug.serpApiCalls = 1;
     const out = await searchSerpApi(queries[0]);
+    debug.serpApiCalls = 1;
     if (out.candidates.length > 0) {
       candidates = out.candidates;
       debug.searchProvider = "serpapi";

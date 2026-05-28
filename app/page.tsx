@@ -7,9 +7,16 @@ export default function Home() {
   const [data, setData] = useState<SearchResponse | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [regenCount, setRegenCount] = useState(0);
+  const [isRenarrowing, setIsRenarrowing] = useState(false);
+  const [renarrowMessage, setRenarrowMessage] = useState("");
 
   async function call(stage: "narrowing" | "results", selectedOptionId?: OptionId) {
     const nextRegen = selectedOptionId === "D" ? regenCount + 1 : regenCount;
+    if (selectedOptionId === "D") {
+      setIsRenarrowing(true);
+      setRenarrowMessage("");
+    }
+
     const res = await fetch("/api/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -17,7 +24,12 @@ export default function Home() {
     });
     const json = (await res.json()) as SearchResponse;
     setData(json);
-    if (selectedOptionId === "D") setRegenCount(nextRegen);
+
+    if (selectedOptionId === "D") {
+      setRegenCount(nextRegen);
+      setIsRenarrowing(false);
+      setRenarrowMessage("已重新整理方向");
+    }
   }
 
   return (
@@ -25,12 +37,15 @@ export default function Home() {
       <h1 className="text-2xl font-semibold">AI Guided Shopping V2B</h1>
       <section className="bg-white rounded-lg border p-4 space-y-3">
         <textarea className="w-full border rounded p-3" value={input} onChange={(e) => setInput(e.target.value)} placeholder="描述你的需求" />
-        <button className="px-4 py-2 bg-slate-900 text-white rounded disabled:opacity-40" onClick={() => call("narrowing")} disabled={!input.trim()}>開始 narrowing</button>
+        <button className="px-4 py-2 bg-slate-900 text-white rounded disabled:opacity-40" onClick={() => call("narrowing")} disabled={!input.trim()}>幫我整理方向</button>
       </section>
 
       {data && (
         <section className="space-y-4">
           <p className="text-sm text-slate-700">{data.intro}</p>
+          {isRenarrowing ? <p className="text-xs text-slate-500">重新整理中...</p> : null}
+          {renarrowMessage ? <p className="text-xs text-emerald-700">{renarrowMessage}</p> : null}
+
           <div className="grid md:grid-cols-2 gap-4">
             {data.options.map((o: NarrowOption) => (
               <article key={o.id} className="bg-white border rounded-lg p-4 hover:shadow transition-shadow">
@@ -43,18 +58,21 @@ export default function Home() {
           </div>
 
           {data.mode === "results" && (
-            <div className="grid md:grid-cols-3 gap-4">
-              {data.candidates.map((c) => (
-                <article key={c.id} className="bg-white border rounded overflow-hidden">
-                  <img src={c.image} alt={c.title} className="h-40 w-full object-cover" />
-                  <div className="p-3 space-y-1">
-                    <h4 className="text-sm font-medium">{c.title}</h4>
-                    <p className="text-xs text-slate-500">{c.source}</p>
-                    {c.link ? <a href={c.link} target="_blank" rel="noreferrer" className="text-xs underline">查看連結</a> : <p className="text-xs text-amber-700">Local Mock（無真實商品連結）</p>}
-                  </div>
-                </article>
-              ))}
-            </div>
+            <>
+              {data.debug.searchProvider === "mock" ? <p className="text-xs text-amber-700">目前未啟用真實搜尋或 SerpAPI 未呼叫，以下為 Local Mock 結果。</p> : null}
+              <div className="grid md:grid-cols-3 gap-4">
+                {data.candidates.map((c) => (
+                  <article key={c.id} className="bg-white border rounded overflow-hidden">
+                    <img src={c.image} alt={c.title} className="h-40 w-full object-cover" />
+                    <div className="p-3 space-y-1">
+                      <h4 className="text-sm font-medium">{c.title}</h4>
+                      <p className="text-xs text-slate-500">{c.source}</p>
+                      {c.link ? <a href={c.link} target="_blank" rel="noreferrer" className="text-xs underline">查看連結</a> : <p className="text-xs text-amber-700">Local Mock（無真實商品連結）</p>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
           )}
 
           <button type="button" className="text-xs underline text-slate-500" onClick={() => setShowDebug((v) => !v)}>

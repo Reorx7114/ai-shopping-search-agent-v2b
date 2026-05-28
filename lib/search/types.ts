@@ -15,6 +15,8 @@ export interface SearchDebug {
   selectedOptionId?: OptionId;
   generatedSearchQueries: string[];
   parserSource: ParserSource;
+  useSerpEnabled: boolean;
+  hasSerpApiKey: boolean;
   errorMessage?: string;
 }
 
