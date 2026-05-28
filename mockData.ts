@@ -1,9 +1,7 @@
-import type { ParsedIntent, SelectedCandidatePayload } from "./types";
+import type { Candidate } from "@/lib/search/types";
 
-export function buildRefinedQuery(parsed: ParsedIntent, selectedCandidate?: SelectedCandidatePayload): string {
-  const candidateCore = selectedCandidate ? `${selectedCandidate.title} ${selectedCandidate.source} ${selectedCandidate.link}` : "";
-  const semantic = [...parsed.features, ...parsed.keywords, ...parsed.coreClues].filter(Boolean).join(" ");
-  const base = selectedCandidate ? `${selectedCandidate.title} ${semantic} ${candidateCore}` : parsed.searchQueries[0] ?? parsed.keywords.join(" ");
-  const negatives = parsed.negativeTerms.map((term) => `-${term}`).join(" ");
-  return `${base} ${negatives}`.trim();
-}
+export const mockCandidates: Candidate[] = [
+  { id: "m1", title: "簡約質感保溫杯（Local Mock）", source: "Local Mock", link: "", image: "https://picsum.photos/seed/m1/240/180", price: "$980", isMock: true },
+  { id: "m2", title: "霧面皮革卡夾（Local Mock）", source: "Local Mock", link: "", image: "https://picsum.photos/seed/m2/240/180", price: "$1,280", isMock: true },
+  { id: "m3", title: "中性香氛擴香（Local Mock）", source: "Local Mock", link: "", image: "https://picsum.photos/seed/m3/240/180", price: "$1,580", isMock: true }
+];
